@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ViridianIT Sign-off Link Builder</title>
+<style>
+:root{color-scheme:light;--ink:#172235;--muted:#5d6a7c;--line:#d9e1eb;--blue:#175cd3;--pale:#f4f7fb;--green:#157347}
+*{box-sizing:border-box}body{margin:0;background:var(--pale);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}.wrap{max-width:760px;margin:56px auto;padding:0 20px}.card{background:white;border:1px solid var(--line);border-radius:16px;padding:30px;box-shadow:0 12px 32px #1722350b}h1{font-size:1.7rem;line-height:1.2;margin:0 0 8px}.intro{margin:0 0 24px;color:var(--muted)}label{display:block;font-weight:650;margin:0 0 8px}textarea{display:block;width:100%;min-height:124px;resize:vertical;border:1px solid #aab7c8;border-radius:9px;padding:12px;font:inherit;color:var(--ink)}textarea:focus{outline:3px solid #175cd326;border-color:var(--blue)}.hint{font-size:.87rem;color:var(--muted);margin:7px 0 18px}.buttons{display:flex;gap:10px;flex-wrap:wrap}button,.open{border:0;border-radius:8px;background:var(--blue);color:white;padding:10px 16px;font:600  .96rem system-ui;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}button.secondary{background:#e8eef7;color:var(--ink)}button:hover,.open:hover{filter:brightness(.95)}.error{color:#b42318;font-weight:600;margin:14px 0 0}.result{margin-top:24px;padding-top:22px;border-top:1px solid var(--line)}.result h2{font-size:1.06rem;margin:0 0 10px}.url{display:block;overflow-wrap:anywhere;background:#f6f8fb;border:1px solid var(--line);border-radius:8px;padding:12px;font: .86rem/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;color:#344054}.actions{margin-top:12px;display:flex;gap:10px;flex-wrap:wrap}.status{font-size:.9rem;color:var(--green);margin:10px 0 0;min-height:1.3em}.note{margin-top:22px;color:var(--muted);font-size:.86rem}@media(max-width:520px){.wrap{margin:24px auto}.card{padding:22px 18px}}
+</style>
+</head>
+<body><main class="wrap"><section class="card">
+<h1>ViridianIT Sign-off Link Builder</h1>
+<p class="intro">Paste a work order title to create its sign-off link.</p>
+<label for="title">Work order title</label>
+<textarea id="title" placeholder="Technician Work Order: 705020700 - Bairnsdale RSL Sub Branch - Severity 2 - 00697959 | ViridianIT [ID:0659743]"></textarea>
+<p class="hint">The app reads the client job number and bracketed ID from the title. Other sign-off details use the standard values below.</p>
+<div class="buttons"><button id="build">Build link</button><button id="clear" class="secondary" type="button">Clear</button></div>
+<p id="error" class="error" role="alert" hidden></p>
+<div id="result" class="result" hidden><h2>Sign-off link</h2><a id="url" class="url" target="_blank" rel="noopener noreferrer"></a><div class="actions"><a id="open" class="open" target="_blank" rel="noopener noreferrer">Open sign-off</a><button id="copy" class="secondary" type="button">Copy link</button></div><p id="status" class="status" aria-live="polite"></p></div>
+<p class="note">Standard fields: Bairnsdale, VIC · Leading Edge Computers - Sale/Bairnsdale · Hardware &gt; Next Payments &gt; Corrective Maintenance</p>
+</section></main>
+<script>
+const titleInput=document.querySelector('#title'), errorBox=document.querySelector('#error'), result=document.querySelector('#result'), urlDisplay=document.querySelector('#url'), openLink=document.querySelector('#open'), status=document.querySelector('#status');
+function build(){
+ const raw=titleInput.value.trim(); errorBox.hidden=true;result.hidden=true;status.textContent='';
+ if(!raw){showError('Paste a work order title first.');return}
+ const idMatch=raw.match(/\[\s*ID\s*:\s*(\d+)\s*\]/i);
+ // Accept both “Technician Work Order: 123…” and “Work Order 123 for…” formats.
+ const jobMatch=raw.match(/(?:Technician\s+)?Work\s+Order\s*(?::\s*|\s+)(\d+)\b/i);
+ if(!idMatch){showError('Could not find an ID in brackets, such as [ID:0659743].');return}
+ if(!jobMatch){showError('Could not find a job number after “Work Order”.');return}
+ // The example title starts with a duplicated T; remove only that extra leading character.
+ let symptom=raw.replace(/^T(?=Technician\s+Work\s+Order\s*:)/i,'');
+ const params=new URLSearchParams({jobid:idMatch[1],clientjob:jobMatch[1],footprint:'Bairnsdale,VIC',techname:'Leading Edge Computers - Sale/Bairnsdale',jobType:'Hardware > Next Payments > Corrective Maintenance',symptom});
+ const url='https://signoff.viridianit.com.au/index.html?'+params.toString();
+ urlDisplay.href=url;urlDisplay.textContent=url;openLink.href=url;result.hidden=false;
+}
+function showError(message){errorBox.textContent=message;errorBox.hidden=false}
+document.querySelector('#build').addEventListener('click',build);
+document.querySelector('#clear').addEventListener('click',()=>{titleInput.value='';result.hidden=true;errorBox.hidden=true;status.textContent='';titleInput.focus()});
+document.querySelector('#copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(urlDisplay.href);status.textContent='Link copied.'}catch{status.textContent='Copy was unavailable. Select and copy the link above.'}});
+titleInput.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter')build()});
+</script></body></html>
